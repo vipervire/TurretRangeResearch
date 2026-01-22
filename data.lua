@@ -78,6 +78,12 @@ for level = 1, 5 do
     local prerequisites = {}
     if level == 1 then
         prerequisites = {"gun-turret", "military-science-pack"}
+    elseif level == 3 then
+        -- First level requiring chemical science
+        prerequisites = {"gun-turret-range-" .. (level - 1), "chemical-science-pack"}
+    elseif level == 5 then
+        -- First level requiring utility science
+        prerequisites = {"gun-turret-range-" .. (level - 1), "utility-science-pack"}
     else
         prerequisites = {"gun-turret-range-" .. (level - 1)}
     end
@@ -105,7 +111,7 @@ for level = 1, 5 do
         unit = {
             count = 100 * level,
             ingredients = ingredients,
-            time = 30 + level * 10
+            time = 60
         },
         upgrade = true
     }})
@@ -115,7 +121,14 @@ end
 for level = 1, 5 do
     local prerequisites = {}
     if level == 1 then
-        prerequisites = {"laser-turret", "military-science-pack"}
+        -- Laser turret already requires chemical science, so include it
+        prerequisites = {"laser-turret", "military-science-pack", "chemical-science-pack"}
+    elseif level == 3 then
+        -- First level requiring utility science
+        prerequisites = {"laser-turret-range-" .. (level - 1), "utility-science-pack"}
+    elseif level == 5 then
+        -- First level requiring space science
+        prerequisites = {"laser-turret-range-" .. (level - 1), "space-science-pack"}
     else
         prerequisites = {"laser-turret-range-" .. (level - 1)}
     end
@@ -144,7 +157,7 @@ for level = 1, 5 do
         unit = {
             count = 150 * level,
             ingredients = ingredients,
-            time = 45 + level * 10
+            time = 60
         },
         upgrade = true
     }})
@@ -154,7 +167,11 @@ end
 for level = 1, 3 do
     local prerequisites = {}
     if level == 1 then
-        prerequisites = {"flamethrower", "military-science-pack"}
+        -- Flamethrower requires chemical science
+        prerequisites = {"flamethrower", "military-science-pack", "chemical-science-pack"}
+    elseif level == 3 then
+        -- First level requiring utility science
+        prerequisites = {"flamethrower-turret-range-" .. (level - 1), "utility-science-pack"}
     else
         prerequisites = {"flamethrower-turret-range-" .. (level - 1)}
     end
@@ -182,7 +199,7 @@ for level = 1, 3 do
         unit = {
             count = 125 * level,
             ingredients = ingredients,
-            time = 40 + level * 10
+            time = 60
         },
         upgrade = true
     }})
