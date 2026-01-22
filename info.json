@@ -1,8 +1,8 @@
 {
   "name": "turret-range-research",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "title": "Turret Range Research",
-  "author": "Matthew",
+  "author": "Vipervire",
   "description": "Adds research technologies to increase the range of gun turrets, laser turrets, and flamethrower turrets.",
   "factorio_version": "2.0",
   "dependencies": [

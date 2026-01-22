@@ -85,7 +85,7 @@ local function swap_turret(old_turret, new_name)
     if old_turret.fluidbox then
         for i = 1, #old_turret.fluidbox do
             local fluid = old_turret.fluidbox[i]
-            if fluid then
+            if fluid and fluid.amount and fluid.amount > 0 then
                 stored_fluids[i] = fluid
             end
         end
@@ -114,8 +114,10 @@ local function swap_turret(old_turret, new_name)
         local new_ammo_inventory = new_turret.get_inventory(defines.inventory.turret_ammo)
         if new_ammo_inventory then
             for i, ammo_data in pairs(stored_ammo) do
-                if new_ammo_inventory[i] then
-                    new_ammo_inventory[i].set_stack({name = ammo_data.name, count = ammo_data.count, ammo = ammo_data.ammo})
+                if new_ammo_inventory[i] and ammo_data.count > 0 then
+                    pcall(function()
+                        new_ammo_inventory[i].set_stack({name = ammo_data.name, count = ammo_data.count, ammo = ammo_data.ammo})
+                    end)
                 end
             end
         end
@@ -123,8 +125,10 @@ local function swap_turret(old_turret, new_name)
         -- Restore fluids
         if new_turret.fluidbox then
             for i, fluid in pairs(stored_fluids) do
-                if new_turret.fluidbox[i] then
-                    new_turret.fluidbox[i] = fluid
+                if new_turret.fluidbox[i] and fluid.amount and fluid.amount > 0 then
+                    pcall(function()
+                        new_turret.fluidbox[i] = fluid
+                    end)
                 end
             end
         end
