@@ -22,22 +22,22 @@ This works identically to vanilla Artillery Shell Range research.
 ### Gun Turret Range
 | Level | Science Packs | Research Time |
 |-------|--------------|---------------|
-| 1-2 | Automation, Logistics, Military | 40-50s |
-| 3-4 | + Chemical | 60-70s |
-| 5 | + Utility | 80s |
+| 1-2 | Automation, Logistics, Military | 60s |
+| 3-4 | + Chemical | 60s |
+| 5 | + Utility | 60s |
 
 ### Laser Turret Range
 | Level | Science Packs | Research Time |
 |-------|--------------|---------------|
-| 1-2 | Automation, Logistics, Military, Chemical | 55-65s |
-| 3-4 | + Utility | 75-85s |
-| 5 | + Space (Space Age) | 95s |
+| 1-2 | Automation, Logistics, Military, Chemical | 60s |
+| 3-4 | + Utility | 60s |
+| 5 | + Space (Space Age) | 60s |
 
 ### Flamethrower Turret Range
 | Level | Science Packs | Research Time |
 |-------|--------------|---------------|
-| 1-2 | Automation, Logistics, Military, Chemical | 50-60s |
-| 3 | + Utility | 70s |
+| 1-2 | Automation, Logistics, Military, Chemical | 60s |
+| 3 | + Utility | 60s |
 
 ## Installation
 
@@ -69,13 +69,6 @@ local bonus = remote.call("turret-range-research", "get_range_bonus", "player", 
 -- Force recalculation of all turrets
 remote.call("turret-range-research", "refresh_all_turrets")
 ```
-
-## Version History
-
-### 1.0.0
-- Initial release
-- Gun turret, laser turret, and flamethrower turret range research
-- Automatic upgrade system (like artillery range)
 
 ## License
 
