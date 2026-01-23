@@ -56,7 +56,7 @@ end
 local function swap_turret(old_turret, new_name)
     if not old_turret.valid then return nil end
     if old_turret.name == new_name then return old_turret end
-    
+
     local surface = old_turret.surface
     local position = old_turret.position
     local force = old_turret.force
@@ -64,6 +64,7 @@ local function swap_turret(old_turret, new_name)
     local health = old_turret.health
     local max_health = old_turret.max_health
     local health_ratio = health / max_health
+    local quality = old_turret.quality
     
     -- Store turret-specific state
     local stored_ammo = {}
@@ -100,6 +101,7 @@ local function swap_turret(old_turret, new_name)
         position = position,
         force = force,
         direction = direction,
+        quality = quality,
         raise_built = false
     }
     
