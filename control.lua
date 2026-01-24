@@ -64,6 +64,8 @@ local function swap_turret(old_turret, new_name)
     local health = old_turret.health
     local max_health = old_turret.max_health
     local health_ratio = health / max_health
+
+    -- Preserve quality if it exists (requires Quality DLC)
     local quality = old_turret.quality
     
     -- Store turret-specific state
@@ -96,14 +98,20 @@ local function swap_turret(old_turret, new_name)
     old_turret.destroy({raise_destroy = false})
     
     -- Create new turret
-    local new_turret = surface.create_entity{
+    local create_params = {
         name = new_name,
         position = position,
         force = force,
         direction = direction,
-        quality = quality,
         raise_built = false
     }
+
+    -- Only set quality if it exists (Quality DLC compatibility)
+    if quality then
+        create_params.quality = quality
+    end
+
+    local new_turret = surface.create_entity(create_params)
     
     if new_turret then
         -- Restore health ratio
