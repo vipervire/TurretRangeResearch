@@ -60,70 +60,99 @@ local function swap_turret(old_turret, new_name)
     local surface = old_turret.surface
     local position = old_turret.position
     local force = old_turret.force
-    local direction = old_turret.direction
-    local health = old_turret.health
-    local max_health = old_turret.max_health
-    local health_ratio = health / max_health
 
-    -- Preserve quality if it exists (requires Quality DLC)
-    local quality = old_turret.quality
-    
-    -- Store turret-specific state
-    local stored_ammo = {}
-    local stored_fluids = {}
-    local kills = old_turret.kills
-    
-    -- Get ammo inventory (gun turrets)
+    -- Capture basic entity state
+    local state = {
+        direction = old_turret.direction,
+        health_ratio = old_turret.health / old_turret.max_health,
+        kills = old_turret.kills,
+    }
+
+    -- Dynamically capture optional properties that may exist
+    -- (Quality DLC, other mods, etc.)
+    local optional_properties = {
+        "quality",           -- Quality DLC
+        "orientation",       -- Rotation for turrets
+        "active",           -- Enable/disable state
+        "enable_logistics_while_moving",
+        "last_user",        -- Player who placed it
+        "bar",              -- Inventory bar limit
+        "force_attack_parameters", -- Target selection settings
+    }
+
+    for _, prop in ipairs(optional_properties) do
+        local success, value = pcall(function() return old_turret[prop] end)
+        if success and value ~= nil then
+            state[prop] = value
+        end
+    end
+
+    -- Store inventory contents (ammo)
+    state.stored_ammo = {}
     local ammo_inventory = old_turret.get_inventory(defines.inventory.turret_ammo)
     if ammo_inventory then
         for i = 1, #ammo_inventory do
             local stack = ammo_inventory[i]
             if stack.valid_for_read then
-                stored_ammo[i] = {name = stack.name, count = stack.count, ammo = stack.ammo}
+                state.stored_ammo[i] = {name = stack.name, count = stack.count, ammo = stack.ammo}
             end
         end
     end
-    
-    -- Get fluid contents (flamethrower turrets)
+
+    -- Store fluid contents (flamethrower turrets)
+    state.stored_fluids = {}
     if old_turret.fluidbox then
         for i = 1, #old_turret.fluidbox do
             local fluid = old_turret.fluidbox[i]
             if fluid and fluid.amount and fluid.amount > 0 then
-                stored_fluids[i] = fluid
+                state.stored_fluids[i] = fluid
             end
         end
     end
-    
+
     -- Destroy old turret
     old_turret.destroy({raise_destroy = false})
-    
-    -- Create new turret
+
+    -- Build creation parameters dynamically
     local create_params = {
         name = new_name,
         position = position,
         force = force,
-        direction = direction,
+        direction = state.direction,
         raise_built = false
     }
 
-    -- Only set quality if it exists (Quality DLC compatibility)
-    if quality then
-        create_params.quality = quality
+    -- Add optional creation-time properties
+    local creation_properties = {"quality", "player", "create_build_effect_smoke"}
+    for _, prop in ipairs(creation_properties) do
+        if state[prop] ~= nil then
+            create_params[prop] = state[prop]
+        end
     end
 
     local new_turret = surface.create_entity(create_params)
-    
+
     if new_turret then
         -- Restore health ratio
-        new_turret.health = new_turret.max_health * health_ratio
-        
+        new_turret.health = new_turret.max_health * state.health_ratio
+
         -- Restore kills
-        new_turret.kills = kills
-        
-        -- Restore ammo
+        new_turret.kills = state.kills
+
+        -- Restore optional settable properties
+        local settable_properties = {"orientation", "active", "enable_logistics_while_moving", "bar", "force_attack_parameters"}
+        for _, prop in ipairs(settable_properties) do
+            if state[prop] ~= nil then
+                pcall(function()
+                    new_turret[prop] = state[prop]
+                end)
+            end
+        end
+
+        -- Restore ammo inventory
         local new_ammo_inventory = new_turret.get_inventory(defines.inventory.turret_ammo)
         if new_ammo_inventory then
-            for i, ammo_data in pairs(stored_ammo) do
+            for i, ammo_data in pairs(state.stored_ammo) do
                 if new_ammo_inventory[i] and ammo_data.count > 0 then
                     pcall(function()
                         new_ammo_inventory[i].set_stack({name = ammo_data.name, count = ammo_data.count, ammo = ammo_data.ammo})
@@ -131,10 +160,10 @@ local function swap_turret(old_turret, new_name)
                 end
             end
         end
-        
-        -- Restore fluids
+
+        -- Restore fluid contents
         if new_turret.fluidbox then
-            for i, fluid in pairs(stored_fluids) do
+            for i, fluid in pairs(state.stored_fluids) do
                 if new_turret.fluidbox[i] and fluid.amount and fluid.amount > 0 then
                     pcall(function()
                         new_turret.fluidbox[i] = fluid
@@ -143,7 +172,7 @@ local function swap_turret(old_turret, new_name)
             end
         end
     end
-    
+
     return new_turret
 end
 
