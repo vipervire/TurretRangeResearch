@@ -110,6 +110,41 @@ local function swap_turret(old_turret, new_name)
         end
     end
 
+    -- Store circuit network connections
+    state.circuit_connections = {}
+    pcall(function()
+        local connections = old_turret.circuit_connection_definitions
+        if connections and #connections > 0 then
+            state.circuit_connections = connections
+        end
+    end)
+
+    -- Store control behavior settings
+    state.control_behavior = {}
+    pcall(function()
+        local behavior = old_turret.get_control_behavior()
+        if behavior then
+            -- Store common control behavior properties
+            local behavior_data = {}
+            if behavior.circuit_condition then
+                behavior_data.circuit_condition = behavior.circuit_condition
+            end
+            if behavior.logistic_condition then
+                behavior_data.logistic_condition = behavior.logistic_condition
+            end
+            if behavior.connect_to_logistic_network ~= nil then
+                behavior_data.connect_to_logistic_network = behavior.connect_to_logistic_network
+            end
+            if behavior.read_contents ~= nil then
+                behavior_data.read_contents = behavior.read_contents
+            end
+            if behavior.circuit_enable_disable ~= nil then
+                behavior_data.circuit_enable_disable = behavior.circuit_enable_disable
+            end
+            state.control_behavior = behavior_data
+        end
+    end)
+
     -- Destroy old turret
     old_turret.destroy({raise_destroy = false})
 
@@ -170,6 +205,27 @@ local function swap_turret(old_turret, new_name)
                     end)
                 end
             end
+        end
+
+        -- Restore circuit network connections
+        if state.circuit_connections and #state.circuit_connections > 0 then
+            pcall(function()
+                for _, connection in pairs(state.circuit_connections) do
+                    new_turret.connect_neighbour(connection)
+                end
+            end)
+        end
+
+        -- Restore control behavior settings
+        if state.control_behavior and next(state.control_behavior) then
+            pcall(function()
+                local behavior = new_turret.get_or_create_control_behavior()
+                if behavior then
+                    for key, value in pairs(state.control_behavior) do
+                        behavior[key] = value
+                    end
+                end
+            end)
         end
     end
 
