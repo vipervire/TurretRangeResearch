@@ -33,37 +33,42 @@ local TURRET_CONFIG = {
 -- ============================================================================
 
 for _, config in pairs(TURRET_CONFIG) do
-    local base = data.raw[config.turret_type][config.base_name]
+    local base = data.raw[config.turret_type] and data.raw[config.turret_type][config.base_name]
     if base then
+        -- Ensure the base turret uses its own name as the fast_replaceable_group
+        -- This allows all variants to replace each other seamlessly
+        base.fast_replaceable_group = config.base_name
+
         for level = 1, config.max_level do
             local variant = table.deepcopy(base)
             variant.name = config.base_name .. "-ranged-" .. level
-            
+
             -- Keep the same localised name as the base turret (invisible to player)
             variant.localised_name = {"entity-name." .. config.base_name}
             variant.localised_description = {"entity-description." .. config.base_name}
-            
+
             -- Mining returns the base item
             if variant.minable then
                 variant.minable.result = config.base_name
             end
-            
+
             -- Increase the attack range
-            if variant.attack_parameters then
+            if variant.attack_parameters and base.attack_parameters then
                 variant.attack_parameters = table.deepcopy(base.attack_parameters)
                 variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
             end
-            
+
             -- Hide from player (not in crafting menu, not selectable separately)
             variant.hidden = true
             variant.hidden_in_factoriopedia = true
-            
-            -- Use same fast_replaceable_group for seamless swapping
+
+            -- Use same fast_replaceable_group as base turret for seamless swapping
+            -- This MUST match the base turret's group for fast_replace to work
             variant.fast_replaceable_group = config.base_name
-            
+
             -- Copy the placeable_by so robots can work with them
             variant.placeable_by = {item = config.base_name, count = 1}
-            
+
             data:extend({variant})
         end
     end
@@ -127,12 +132,17 @@ for level = 1, 5 do
         -- First level requiring utility science
         prerequisites = {"laser-turret-range-" .. (level - 1), "utility-science-pack"}
     elseif level == 5 then
-        -- First level requiring space science
-        prerequisites = {"laser-turret-range-" .. (level - 1), "space-science-pack"}
+        -- First level requiring space science (if Space Age DLC is installed)
+        prerequisites = {"laser-turret-range-" .. (level - 1)}
+        if data.raw.tool["space-science-pack"] then
+            table.insert(prerequisites, "space-science-pack")
+        else
+            table.insert(prerequisites, "utility-science-pack")
+        end
     else
         prerequisites = {"laser-turret-range-" .. (level - 1)}
     end
-    
+
     local ingredients = {
         {"automation-science-pack", 1},
         {"logistic-science-pack", 1},
@@ -140,7 +150,10 @@ for level = 1, 5 do
         {"chemical-science-pack", 1}
     }
     if level >= 3 then table.insert(ingredients, {"utility-science-pack", 1}) end
-    if level >= 5 then table.insert(ingredients, {"space-science-pack", 1}) end
+    -- Only add space science if Space Age DLC is installed
+    if level >= 5 and data.raw.tool["space-science-pack"] then
+        table.insert(ingredients, {"space-science-pack", 1})
+    end
     
     data:extend({{
         type = "technology",

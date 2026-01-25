@@ -1,0 +1,35 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.5
+Date: 25. 01. 2026
+  Bugfixes:
+    - Fixed circuit network connections being lost when turrets are upgraded
+    - Fixed control behavior settings (circuit conditions, logistic conditions) not being preserved
+    - Fixed target selection settings (force_attack_parameters) not being retained after upgrade
+  Changes:
+    - Improved turret state preservation to be more compatible with other mods that add custom properties
+    - Turret swapping now uses fast_replace mechanism (like upgrading assembling machines) for more reliable state transfer
+    - Significantly simplified code by leveraging Factorio's built-in upgrade system
+    - Turret replacement now safer - won't lose turrets if replacement fails
+---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 23. 01. 2026
+  Bugfixes:
+    - Fixed turrets losing quality tier when upgraded by research or when placed with research completed
+---------------------------------------------------------------------------------------------------
+Version: 1.0.2
+Date: 14. 01. 2026
+  Changes:
+    - Added safety check in case quality is disabled
+---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Date: 13. 01. 2026
+  Changes:
+    - Added quality parameter support
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 12. 01. 2026
+  Features:
+    - Initial release
+    - Adds research technologies to increase the range of gun turrets, laser turrets, and flamethrower turrets
+    - Turrets automatically upgrade when research completes
+    - Preserves turret state (ammo, health, kills, fluids) during upgrades
