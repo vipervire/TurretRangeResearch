@@ -1,13 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.5
-Date: 24. 01. 2026
+Date: 25. 01. 2026
   Bugfixes:
     - Fixed circuit network connections being lost when turrets are upgraded
     - Fixed control behavior settings (circuit conditions, logistic conditions) not being preserved
     - Fixed target selection settings (force_attack_parameters) not being retained after upgrade
   Changes:
     - Improved turret state preservation to be more compatible with other mods that add custom properties
-    - Turret swapping now dynamically captures and restores optional entity properties
+    - Turret swapping now uses fast_replace mechanism (like upgrading assembling machines) for more reliable state transfer
+    - Significantly simplified code by leveraging Factorio's built-in upgrade system
+    - Turret replacement now safer - won't lose turrets if replacement fails
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 23. 01. 2026

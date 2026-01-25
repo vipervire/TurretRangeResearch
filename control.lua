@@ -54,30 +54,28 @@ end
 
 -- Swap a turret to a different variant, preserving all state
 local function swap_turret(old_turret, new_name)
-    if not old_turret.valid then return nil end
+    if not old_turret or not old_turret.valid then return nil end
     if old_turret.name == new_name then return old_turret end
 
     local surface = old_turret.surface
+    if not surface or not surface.valid then return nil end
+
     local position = old_turret.position
     local force = old_turret.force
 
-    -- Capture basic entity state
+    -- Capture state that won't be automatically transferred by fast_replace
     local state = {
         direction = old_turret.direction,
-        health_ratio = old_turret.health / old_turret.max_health,
-        kills = old_turret.kills,
+        kills = old_turret.kills,  -- Kills counter needs manual restoration
     }
 
-    -- Dynamically capture optional properties that may exist
-    -- (Quality DLC, other mods, etc.)
+    -- Capture optional properties for creation or manual restoration
+    -- fast_replace handles most state, but some properties need special handling
     local optional_properties = {
-        "quality",           -- Quality DLC
-        "orientation",       -- Rotation for turrets
-        "active",           -- Enable/disable state
-        "enable_logistics_while_moving",
-        "last_user",        -- Player who placed it
-        "bar",              -- Inventory bar limit
-        "force_attack_parameters", -- Target selection settings
+        "quality",                  -- Quality DLC (creation-time parameter)
+        "orientation",              -- Turret rotation
+        "active",                   -- Enable/disable state
+        "force_attack_parameters",  -- Target selection settings
     }
 
     for _, prop in ipairs(optional_properties) do
@@ -87,73 +85,26 @@ local function swap_turret(old_turret, new_name)
         end
     end
 
-    -- Store inventory contents (ammo)
-    state.stored_ammo = {}
-    local ammo_inventory = old_turret.get_inventory(defines.inventory.turret_ammo)
-    if ammo_inventory then
-        for i = 1, #ammo_inventory do
-            local stack = ammo_inventory[i]
-            if stack.valid_for_read then
-                state.stored_ammo[i] = {name = stack.name, count = stack.count, ammo = stack.ammo}
-            end
-        end
+    -- First verify the new turret prototype exists
+    if not game.entity_prototypes[new_name] then
+        return nil
     end
 
-    -- Store fluid contents (flamethrower turrets)
-    state.stored_fluids = {}
-    if old_turret.fluidbox then
-        for i = 1, #old_turret.fluidbox do
-            local fluid = old_turret.fluidbox[i]
-            if fluid and fluid.amount and fluid.amount > 0 then
-                state.stored_fluids[i] = fluid
-            end
-        end
+    -- Verify old turret is still valid before attempting replacement
+    if not old_turret.valid then
+        return nil
     end
 
-    -- Store circuit network connections
-    state.circuit_connections = {}
-    pcall(function()
-        local connections = old_turret.circuit_connection_definitions
-        if connections and #connections > 0 then
-            state.circuit_connections = connections
-        end
-    end)
-
-    -- Store control behavior settings
-    state.control_behavior = {}
-    pcall(function()
-        local behavior = old_turret.get_control_behavior()
-        if behavior then
-            -- Store common control behavior properties
-            local behavior_data = {}
-            if behavior.circuit_condition then
-                behavior_data.circuit_condition = behavior.circuit_condition
-            end
-            if behavior.logistic_condition then
-                behavior_data.logistic_condition = behavior.logistic_condition
-            end
-            if behavior.connect_to_logistic_network ~= nil then
-                behavior_data.connect_to_logistic_network = behavior.connect_to_logistic_network
-            end
-            if behavior.read_contents ~= nil then
-                behavior_data.read_contents = behavior.read_contents
-            end
-            if behavior.circuit_enable_disable ~= nil then
-                behavior_data.circuit_enable_disable = behavior.circuit_enable_disable
-            end
-            state.control_behavior = behavior_data
-        end
-    end)
-
-    -- Destroy old turret
-    old_turret.destroy({raise_destroy = false})
-
-    -- Build creation parameters dynamically
+    -- Build creation parameters using fast_replace for upgrade-style replacement
+    -- Passing the old entity directly tells the game to perform an upgrade-style replace
+    -- This automatically preserves inventories, circuit connections, health, and most settings
     local create_params = {
         name = new_name,
         position = position,
         force = force,
         direction = state.direction,
+        fast_replace = old_turret,  -- Pass the entity to replace (like upgrading AM2 to AM3)
+        spill = false,              -- Don't spill items if replacement fails
         raise_built = false
     }
 
@@ -165,67 +116,35 @@ local function swap_turret(old_turret, new_name)
         end
     end
 
+    -- Create the new turret using fast_replace (like upgrading AM2 to AM3)
     local new_turret = surface.create_entity(create_params)
 
-    if new_turret then
-        -- Restore health ratio
-        new_turret.health = new_turret.max_health * state.health_ratio
+    if not new_turret then
+        return nil
+    end
 
-        -- Restore kills
-        new_turret.kills = state.kills
+    if new_turret and new_turret.valid then
+        -- fast_replace automatically handles:
+        -- - Inventories (ammo, fluids)
+        -- - Circuit connections
+        -- - Control behavior
+        -- - Health ratio
+        -- - Direction
+        -- - Force
 
-        -- Restore optional settable properties
-        local settable_properties = {"orientation", "active", "enable_logistics_while_moving", "bar", "force_attack_parameters"}
+        -- Restore kills counter (not transferred by fast_replace)
+        pcall(function()
+            new_turret.kills = state.kills
+        end)
+
+        -- Restore optional properties that may not transfer automatically
+        local settable_properties = {"orientation", "active", "force_attack_parameters"}
         for _, prop in ipairs(settable_properties) do
             if state[prop] ~= nil then
                 pcall(function()
                     new_turret[prop] = state[prop]
                 end)
             end
-        end
-
-        -- Restore ammo inventory
-        local new_ammo_inventory = new_turret.get_inventory(defines.inventory.turret_ammo)
-        if new_ammo_inventory then
-            for i, ammo_data in pairs(state.stored_ammo) do
-                if new_ammo_inventory[i] and ammo_data.count > 0 then
-                    pcall(function()
-                        new_ammo_inventory[i].set_stack({name = ammo_data.name, count = ammo_data.count, ammo = ammo_data.ammo})
-                    end)
-                end
-            end
-        end
-
-        -- Restore fluid contents
-        if new_turret.fluidbox then
-            for i, fluid in pairs(state.stored_fluids) do
-                if new_turret.fluidbox[i] and fluid.amount and fluid.amount > 0 then
-                    pcall(function()
-                        new_turret.fluidbox[i] = fluid
-                    end)
-                end
-            end
-        end
-
-        -- Restore circuit network connections
-        if state.circuit_connections and #state.circuit_connections > 0 then
-            pcall(function()
-                for _, connection in pairs(state.circuit_connections) do
-                    new_turret.connect_neighbour(connection)
-                end
-            end)
-        end
-
-        -- Restore control behavior settings
-        if state.control_behavior and next(state.control_behavior) then
-            pcall(function()
-                local behavior = new_turret.get_or_create_control_behavior()
-                if behavior then
-                    for key, value in pairs(state.control_behavior) do
-                        behavior[key] = value
-                    end
-                end
-            end)
         end
     end
 
