@@ -74,7 +74,6 @@ local function swap_turret(old_turret, new_name)
     local optional_properties = {
         "quality",                  -- Quality DLC (creation-time parameter)
         "orientation",              -- Turret rotation
-        "active",                   -- Enable/disable state
         "force_attack_parameters",  -- Target selection settings
     }
 
@@ -157,10 +156,11 @@ local function swap_turret(old_turret, new_name)
         -- fast_replace automatically handles:
         -- - Inventories (ammo, fluids)
         -- - Circuit connections
-        -- - Control behavior
+        -- - Control behavior (including circuit-controlled enable/disable)
         -- - Health ratio
         -- - Direction
         -- - Force
+        -- - Active state (controlled by circuit conditions)
 
         -- Restore kills counter (not transferred by fast_replace)
         pcall(function()
@@ -168,7 +168,7 @@ local function swap_turret(old_turret, new_name)
         end)
 
         -- Restore optional properties that may not transfer automatically
-        local settable_properties = {"orientation", "active", "force_attack_parameters"}
+        local settable_properties = {"orientation", "force_attack_parameters"}
         for _, prop in ipairs(settable_properties) do
             if state[prop] ~= nil then
                 pcall(function()
