@@ -86,7 +86,7 @@ local function swap_turret(old_turret, new_name)
     end
 
     -- First verify the new turret prototype exists
-    if not game.entity_prototypes[new_name] then
+    if not prototypes.entity[new_name] then
         return nil
     end
 
