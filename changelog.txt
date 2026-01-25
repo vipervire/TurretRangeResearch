@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.6
+Date: 25. 01. 2026
+  Bugfixes:
+    - Fixed incorrect API usage for prototype checking (was causing crashes on research completion)
+    - Fixed incorrect fast_replace parameter usage (was passing entity instead of boolean)
+    - Fixed circuit-controlled turrets becoming permanently disabled after upgrade
+  Changes:
+    - Added preservation of entity tags and labels for mod compatibility
+    - Now raises script_raised_built events after replacement so other mods can react
+    - Added comprehensive remote interface for mod developers
+    - Added warning messages if turret upgrade fails
+    - Enhanced Space Age compatibility with better science pack detection
+---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 25. 01. 2026
   Bugfixes:
