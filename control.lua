@@ -85,8 +85,33 @@ local function swap_turret(old_turret, new_name)
         end
     end
 
+    -- Capture entity tags (used by some mods for custom data)
+    state.entity_tags = {}
+    pcall(function()
+        if old_turret.entity_label then
+            state.entity_label = old_turret.entity_label
+        end
+        -- Some mods use tags for custom data storage
+        local tags = old_turret.tags
+        if tags and next(tags) then
+            state.entity_tags = tags
+        end
+    end)
+
     -- First verify the new turret prototype exists
-    if not prototypes.entity[new_name] then
+    -- Wrapped in pcall for safety in case prototypes system has issues
+    local prototype_exists = false
+    pcall(function()
+        if prototypes and prototypes.entity and prototypes.entity[new_name] then
+            prototype_exists = true
+        end
+    end)
+
+    if not prototype_exists then
+        -- Log warning if prototype is missing (shouldn't happen in normal gameplay)
+        if old_turret and old_turret.valid and old_turret.force then
+            old_turret.force.print({"", "[color=yellow][Turret Range Warning][/color] Could not upgrade turret: prototype '", new_name, "' not found. Please report this issue."})
+        end
         return nil
     end
 
@@ -120,6 +145,10 @@ local function swap_turret(old_turret, new_name)
     local new_turret = surface.create_entity(create_params)
 
     if not new_turret then
+        -- Log warning if creation failed (turret is safe, just not upgraded)
+        if force then
+            force.print({"", "[color=yellow][Turret Range Warning][/color] Could not upgrade turret at (", position.x, ", ", position.y, ") to '", new_name, "'. Turret remains unchanged."})
+        end
         return nil
     end
 
@@ -146,6 +175,25 @@ local function swap_turret(old_turret, new_name)
                 end)
             end
         end
+
+        -- Restore entity tags and labels (for mod compatibility)
+        pcall(function()
+            if state.entity_label then
+                new_turret.entity_label = state.entity_label
+            end
+            if state.entity_tags and next(state.entity_tags) then
+                new_turret.tags = state.entity_tags
+            end
+        end)
+
+        -- Raise custom event for mod compatibility
+        -- Other mods can listen to this to know when we've upgraded a turret
+        pcall(function()
+            script.raise_event(defines.events.script_raised_built, {
+                entity = new_turret,
+                mod_name = script.mod_name
+            })
+        end)
     end
 
     return new_turret
@@ -265,21 +313,40 @@ script.on_event(defines.events.on_entity_cloned, on_turret_built, turret_filters
 -- ============================================================================
 -- REMOTE INTERFACE (for other mods)
 -- ============================================================================
+--
+-- MOD COMPATIBILITY NOTES:
+-- This mod uses fast_replace to swap turrets, which means:
+-- 1. Entity references become invalid when a turret is upgraded
+-- 2. We raise script_raised_built after replacement (other mods can listen to this)
+-- 3. Entity tags, labels, and most properties are preserved
+-- 4. Circuit connections and control behavior are preserved
+--
+-- If your mod stores references to turret entities:
+-- - Listen to script_raised_built events from "turret-range-research"
+-- - Use the remote interface below to check if an entity is our variant
+-- - Re-query entities after research completes
+--
+-- ============================================================================
 
 remote.add_interface("turret-range-research", {
     -- Get the current range bonus for a turret type
+    -- force_name: string - name of the force
+    -- base_turret_name: string - "gun-turret", "laser-turret", or "flamethrower-turret"
+    -- Returns: number - tiles of range bonus (0 if no research)
     get_range_bonus = function(force_name, base_turret_name)
         local force = game.forces[force_name]
         if not force then return 0 end
-        
+
         local config = TURRET_CONFIG[base_turret_name]
         if not config then return 0 end
-        
+
         local level = get_research_level(force, config.tech_prefix, config.max_level)
         return level * 3  -- 3 tiles per level
     end,
-    
+
     -- Manually trigger upgrade check for a force
+    -- Useful for other mods that need to refresh turrets
+    -- force_name: string - name of the force to refresh
     refresh_force = function(force_name)
         local force = game.forces[force_name]
         if force then
@@ -287,5 +354,22 @@ remote.add_interface("turret-range-research", {
                 upgrade_turrets_for_force(force, base_name)
             end
         end
+    end,
+
+    -- Check if an entity is one of our turret variants
+    -- entity_name: string - the entity prototype name
+    -- Returns: string or nil - base turret name if it's our variant, nil otherwise
+    is_turret_variant = function(entity_name)
+        return VARIANT_TO_BASE[entity_name]
+    end,
+
+    -- Get the appropriate variant name for a base turret and force
+    -- base_turret_name: string - "gun-turret", "laser-turret", or "flamethrower-turret"
+    -- force_name: string - name of the force
+    -- Returns: string - the variant name that should be used
+    get_variant_for_force = function(base_turret_name, force_name)
+        local force = game.forces[force_name]
+        if not force then return base_turret_name end
+        return get_turret_variant(base_turret_name, force)
     end
 })
