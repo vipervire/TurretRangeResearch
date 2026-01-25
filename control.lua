@@ -121,14 +121,15 @@ local function swap_turret(old_turret, new_name)
     end
 
     -- Build creation parameters using fast_replace for upgrade-style replacement
-    -- Passing the old entity directly tells the game to perform an upgrade-style replace
+    -- fast_replace = true tells the game to replace any entity at this position
+    -- that shares the same fast_replaceable_group (like upgrading AM2 to AM3)
     -- This automatically preserves inventories, circuit connections, health, and most settings
     local create_params = {
         name = new_name,
         position = position,
         force = force,
         direction = state.direction,
-        fast_replace = old_turret,  -- Pass the entity to replace (like upgrading AM2 to AM3)
+        fast_replace = true,        -- Enable fast_replace mechanism
         spill = false,              -- Don't spill items if replacement fails
         raise_built = false
     }
