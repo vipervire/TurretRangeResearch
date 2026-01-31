@@ -69,6 +69,13 @@ for _, config in pairs(TURRET_CONFIG) do
             -- Copy the placeable_by so robots can work with them
             variant.placeable_by = {item = config.base_name, count = 1}
 
+            -- CRITICAL: Ensure variant inherits the base turret's effect receiver
+            -- This is required for Space Age compatibility so damage bonuses apply correctly
+            -- Without this, variants are not recognized as derived entities and lose research bonuses
+            if base.effect_receiver then
+                variant.effect_receiver = table.deepcopy(base.effect_receiver)
+            end
+
             data:extend({variant})
         end
     end

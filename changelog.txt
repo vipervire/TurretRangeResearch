@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.7
+Date: 31. 01. 2026
+  Bugfixes:
+    - Fixed turrets losing damage research bonuses after range research completion (Space Age compatibility issue)
+  Changes:
+    - Added explicit effect_receiver preservation to ensure variants inherit damage bonuses from research
+    - Added optional dependencies for bobplates, bobwarfare, and lilys-incendiaries for better mod compatibility
+---------------------------------------------------------------------------------------------------
 Version: 1.0.6
 Date: 25. 01. 2026
   Bugfixes:
