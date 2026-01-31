@@ -8,8 +8,8 @@
   "dependencies": [
     "base >= 2.0",
     "? space-age",
-    "? (bobplates)",
-    "? (bobwarfare)",
-    "? (lilys-incendiaries)"
+    "(?) bobplates",
+    "(?) bobwarfare",
+    "(?) lilys-incendiaries"
   ]
 }
