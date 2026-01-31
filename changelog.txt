@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.8
+Date: 31. 01. 2026
+  Bugfixes:
+    - Actually fixed turrets losing damage research bonuses after range research completion
+    - Fixed fast_replaceable_group conflicts with mods like Bob's Warfare
+  Changes:
+    - Added data-final-fixes.lua to extend damage research technologies to include turret variants
+    - Damage technologies now explicitly target variant turrets with turret-attack effects
+    - Fast_replaceable_group now reads from base turret instead of overwriting it for better mod compatibility
+---------------------------------------------------------------------------------------------------
 Version: 1.0.7
 Date: 31. 01. 2026
   Bugfixes:
@@ -6,6 +16,7 @@ Date: 31. 01. 2026
   Changes:
     - Added explicit effect_receiver preservation to ensure variants inherit damage bonuses from research
     - Added optional dependencies for bobplates, bobwarfare, and lilys-incendiaries for better mod compatibility
+    - Initial attempt to fix damage research bonus issue with effect_receiver preservation
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.6
 Date: 25. 01. 2026

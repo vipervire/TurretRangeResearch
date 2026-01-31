@@ -35,9 +35,9 @@ local TURRET_CONFIG = {
 for _, config in pairs(TURRET_CONFIG) do
     local base = data.raw[config.turret_type] and data.raw[config.turret_type][config.base_name]
     if base then
-        -- Ensure the base turret uses its own name as the fast_replaceable_group
-        -- This allows all variants to replace each other seamlessly
-        base.fast_replaceable_group = config.base_name
+        -- Get the base turret's fast_replaceable_group (use existing or default to base_name)
+        -- This ensures compatibility with mods that modify turret upgrade chains (like Bob's Warfare)
+        local replaceable_group = base.fast_replaceable_group or config.base_name
 
         for level = 1, config.max_level do
             local variant = table.deepcopy(base)
@@ -52,9 +52,8 @@ for _, config in pairs(TURRET_CONFIG) do
                 variant.minable.result = config.base_name
             end
 
-            -- Increase the attack range
-            if variant.attack_parameters and base.attack_parameters then
-                variant.attack_parameters = table.deepcopy(base.attack_parameters)
+            -- Modify the attack range directly in the deep-copied attack_parameters
+            if variant.attack_parameters then
                 variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
             end
 
@@ -64,17 +63,10 @@ for _, config in pairs(TURRET_CONFIG) do
 
             -- Use same fast_replaceable_group as base turret for seamless swapping
             -- This MUST match the base turret's group for fast_replace to work
-            variant.fast_replaceable_group = config.base_name
+            variant.fast_replaceable_group = replaceable_group
 
             -- Copy the placeable_by so robots can work with them
             variant.placeable_by = {item = config.base_name, count = 1}
-
-            -- CRITICAL: Ensure variant inherits the base turret's effect receiver
-            -- This is required for Space Age compatibility so damage bonuses apply correctly
-            -- Without this, variants are not recognized as derived entities and lose research bonuses
-            if base.effect_receiver then
-                variant.effect_receiver = table.deepcopy(base.effect_receiver)
-            end
 
             data:extend({variant})
         end
