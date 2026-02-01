@@ -178,9 +178,86 @@ local function on_init()
     end
 end
 
+-- Check if a turret name is from the old variant system
+local function is_old_variant(name)
+    return string.find(name, "%-ranged%-") ~= nil
+end
+
+-- Get the base turret name from a variant name
+local function get_base_name_from_variant(variant_name)
+    -- "gun-turret-ranged-5" -> "gun-turret"
+    return variant_name:match("(.+)%-ranged%-%d+")
+end
+
 -- Handle configuration changes (mod updates)
 local function on_configuration_changed(data)
     global.turret_base_ranges = global.turret_base_ranges or {}
+
+    -- Check if we're upgrading from version 1.x to 2.x
+    local old_version = data.mod_changes and data.mod_changes["turret-range-research"] and
+                        data.mod_changes["turret-range-research"].old_version
+    local migrating_from_v1 = old_version and string.sub(old_version, 1, 2) == "1."
+
+    if migrating_from_v1 then
+        game.print("[color=yellow][Turret Range Research][/color] Migrating from v1.x to v2.0 - Converting turrets to runtime system...")
+
+        -- Clear stored ranges for fresh start
+        global.turret_base_ranges = {}
+
+        -- For each force, detect old variant turrets and fix their ranges
+        for _, force in pairs(game.forces) do
+            for _, surface in pairs(game.surfaces) do
+                -- Find all turret types
+                for family_name, config in pairs(TURRET_CONFIG) do
+                    local turrets = surface.find_entities_filtered{
+                        type = config.type,
+                        force = force
+                    }
+
+                    for _, turret in pairs(turrets) do
+                        if turret.valid and turret.attack_parameters then
+                            -- Get current research level
+                            local turret_family, turret_config = get_turret_family(turret)
+                            if turret_family and turret_config then
+                                -- Get the BASE turret's prototype range (not variant's range)
+                                -- Base ranges: gun=18, laser=24, flamethrower=30
+                                local base_turret_proto = prototypes.entity[family_name]
+                                local base_range = base_turret_proto and
+                                                  base_turret_proto.attack_parameters and
+                                                  base_turret_proto.attack_parameters.range
+
+                                if not base_range then
+                                    -- Fallback to known base ranges if prototype lookup fails
+                                    if family_name == "gun-turret" then
+                                        base_range = 18
+                                    elseif family_name == "laser-turret" then
+                                        base_range = 24
+                                    elseif family_name == "flamethrower-turret" then
+                                        base_range = 30
+                                    else
+                                        base_range = turret.attack_parameters.range
+                                    end
+                                end
+
+                                local level = get_research_level(force, turret_config.tech_prefix, turret_config.max_level)
+                                local expected_bonus = level * RANGE_BONUS_PER_LEVEL
+
+                                -- Store the base range
+                                if turret.unit_number then
+                                    global.turret_base_ranges[turret.unit_number] = base_range
+                                end
+
+                                -- Apply correct range
+                                turret.attack_parameters.range = base_range + expected_bonus
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        game.print("[color=green][Turret Range Research][/color] Migration complete! All turrets converted to runtime system.")
+    end
 
     -- Re-check all turrets when mod configuration changes
     for _, force in pairs(game.forces) do

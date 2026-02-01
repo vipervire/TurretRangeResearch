@@ -17,7 +17,10 @@ Date: 31. 01. 2026
     - Range bonuses persist correctly through save/load
   Migration:
     - Existing saves will automatically migrate - no action needed
-    - All turrets will be updated to use runtime range modification
+    - Properly handles range values to prevent double-bonuses
+    - Variant entities kept for compatibility but deprecated (only for migration)
+    - All turrets will be converted to use runtime range modification
+    - Migration is safe and automatic on first load with v2.0
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.8
 Date: 31. 01. 2026

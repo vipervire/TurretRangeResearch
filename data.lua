@@ -27,11 +27,43 @@ local TURRET_CONFIG = {
 }
 
 -- ============================================================================
--- RUNTIME RANGE MODIFICATION
--- Range bonuses are applied at runtime directly to turret entities
--- This provides better mod compatibility and eliminates hidden entities
+-- DEPRECATED VARIANT ENTITIES (FOR MIGRATION ONLY)
+-- These exist only to prevent save errors when upgrading from v1.x
+-- New turrets use runtime range modification instead (see control.lua)
 -- ============================================================================
--- Note: Range modification is handled in control.lua
+
+for _, config in pairs(TURRET_CONFIG) do
+    local base = data.raw[config.turret_type] and data.raw[config.turret_type][config.base_name]
+    if base then
+        for level = 1, config.max_level do
+            -- Create minimal variant entity for migration compatibility
+            -- These will be converted to base turrets with runtime bonuses on load
+            local variant = table.deepcopy(base)
+            variant.name = config.base_name .. "-ranged-" .. level
+
+            -- Keep same localised name
+            variant.localised_name = {"entity-name." .. config.base_name}
+            variant.localised_description = {"entity-description." .. config.base_name}
+
+            -- Mining returns base item
+            if variant.minable then
+                variant.minable.result = config.base_name
+            end
+
+            -- Set range (though this will be overridden by runtime system)
+            if variant.attack_parameters then
+                variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
+            end
+
+            -- Mark as hidden and deprecated
+            variant.hidden = true
+            variant.hidden_in_factoriopedia = true
+
+            -- Add to game for migration support
+            data:extend({variant})
+        end
+    end
+end
 
 -- ============================================================================
 -- TECHNOLOGY DEFINITIONS
