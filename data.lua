@@ -27,51 +27,11 @@ local TURRET_CONFIG = {
 }
 
 -- ============================================================================
--- CREATE HIDDEN TURRET VARIANTS
--- These are identical to base turrets but with increased range
--- They use the same localised name so players see them as the same turret
+-- RUNTIME RANGE MODIFICATION
+-- Range bonuses are applied at runtime directly to turret entities
+-- This provides better mod compatibility and eliminates hidden entities
 -- ============================================================================
-
-for _, config in pairs(TURRET_CONFIG) do
-    local base = data.raw[config.turret_type] and data.raw[config.turret_type][config.base_name]
-    if base then
-        -- Get the base turret's fast_replaceable_group (use existing or default to base_name)
-        -- This ensures compatibility with mods that modify turret upgrade chains (like Bob's Warfare)
-        local replaceable_group = base.fast_replaceable_group or config.base_name
-
-        for level = 1, config.max_level do
-            local variant = table.deepcopy(base)
-            variant.name = config.base_name .. "-ranged-" .. level
-
-            -- Keep the same localised name as the base turret (invisible to player)
-            variant.localised_name = {"entity-name." .. config.base_name}
-            variant.localised_description = {"entity-description." .. config.base_name}
-
-            -- Mining returns the base item
-            if variant.minable then
-                variant.minable.result = config.base_name
-            end
-
-            -- Modify the attack range directly in the deep-copied attack_parameters
-            if variant.attack_parameters then
-                variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
-            end
-
-            -- Hide from player (not in crafting menu, not selectable separately)
-            variant.hidden = true
-            variant.hidden_in_factoriopedia = true
-
-            -- Use same fast_replaceable_group as base turret for seamless swapping
-            -- This MUST match the base turret's group for fast_replace to work
-            variant.fast_replaceable_group = replaceable_group
-
-            -- Copy the placeable_by so robots can work with them
-            variant.placeable_by = {item = config.base_name, count = 1}
-
-            data:extend({variant})
-        end
-    end
-end
+-- Note: Range modification is handled in control.lua
 
 -- ============================================================================
 -- TECHNOLOGY DEFINITIONS

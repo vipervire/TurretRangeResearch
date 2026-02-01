@@ -1,4 +1,24 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.0
+Date: 31. 01. 2026
+  Major Changes:
+    - BREAKING: Complete rewrite to use runtime range modification instead of hidden entity variants
+    - No longer creates hidden turret entities - applies range bonuses directly at runtime
+    - Damage bonuses now work automatically without technology modifications
+    - Significantly better mod compatibility - automatically works with Bob's Warfare and other turret mods
+  Features:
+    - Added mod setting: "Affect modded turrets" - control whether range research affects all turrets of the same type or only vanilla turrets
+    - When enabled, automatically affects ALL ammo/electric/fluid turrets including modded ones
+    - Better performance - no entity swapping or fast_replace operations
+  Technical:
+    - Removed 15 hidden entity prototypes
+    - Removed data-final-fixes.lua (no longer needed)
+    - Stores base range for each turret to handle modded turrets with custom ranges
+    - Range bonuses persist correctly through save/load
+  Migration:
+    - Existing saves will automatically migrate - no action needed
+    - All turrets will be updated to use runtime range modification
+---------------------------------------------------------------------------------------------------
 Version: 1.0.8
 Date: 31. 01. 2026
   Bugfixes:
