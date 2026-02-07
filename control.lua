@@ -170,6 +170,8 @@ end
 
 -- Initialize global data structure
 local function initialize_globals()
+    -- Ensure global table exists (needed when adding mod to existing save)
+    global = global or {}
     global.turret_base_ranges = global.turret_base_ranges or {}
 end
 
