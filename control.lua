@@ -168,9 +168,14 @@ local function on_turret_built(event)
     apply_range_bonus(entity)
 end
 
+-- Initialize global data structure
+local function initialize_globals()
+    global.turret_base_ranges = global.turret_base_ranges or {}
+end
+
 -- Initialize global data
 local function on_init()
-    global.turret_base_ranges = global.turret_base_ranges or {}
+    initialize_globals()
 
     -- Update all existing turrets
     for _, force in pairs(game.forces) do
@@ -191,7 +196,8 @@ end
 
 -- Handle configuration changes (mod updates)
 local function on_configuration_changed(data)
-    global.turret_base_ranges = global.turret_base_ranges or {}
+    -- Initialize globals first (needed when adding mod to existing save)
+    initialize_globals()
 
     -- Check if we're upgrading from version 1.x to 2.x
     local old_version = data.mod_changes and data.mod_changes["turret-range-research"] and
