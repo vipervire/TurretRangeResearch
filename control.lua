@@ -84,8 +84,9 @@ local function get_base_range(entity)
 
     -- If we haven't seen this turret before, store its current range as base
     if not global.turret_base_ranges[turret_id] then
-        if entity.attack_parameters and entity.attack_parameters.range then
-            global.turret_base_ranges[turret_id] = entity.attack_parameters.range
+        local success, attack_params = pcall(function() return entity.attack_parameters end)
+        if success and attack_params and attack_params.range then
+            global.turret_base_ranges[turret_id] = attack_params.range
         end
     end
 
@@ -95,7 +96,13 @@ end
 -- Apply range bonus to a turret based on research level
 local function apply_range_bonus(entity)
     if not entity or not entity.valid then return false end
-    if not entity.attack_parameters then return false end
+
+    -- Skip ghost entities (blueprints, marked for deconstruction, etc.)
+    if entity.name == "entity-ghost" then return false end
+
+    -- Safely check if attack_parameters exists
+    local success, attack_params = pcall(function() return entity.attack_parameters end)
+    if not success or not attack_params then return false end
 
     local family_name, config = get_turret_family(entity)
     if not family_name or not config then return false end
@@ -109,7 +116,7 @@ local function apply_range_bonus(entity)
 
     -- Apply bonus
     local new_range = base_range + (level * RANGE_BONUS_PER_LEVEL)
-    entity.attack_parameters.range = new_range
+    attack_params.range = new_range
 
     return true
 end
@@ -223,9 +230,14 @@ local function on_configuration_changed(data)
                     }
 
                     for _, turret in pairs(turrets) do
-                        if turret.valid and turret.attack_parameters then
-                            -- Get current research level
-                            local turret_family, turret_config = get_turret_family(turret)
+                        -- Skip ghost entities (blueprints, marked for deconstruction, etc.)
+                        -- They don't have attack_parameters and accessing it will error
+                        if turret.valid and turret.name ~= "entity-ghost" then
+                            -- Safely check if attack_parameters exists
+                            local success, attack_params = pcall(function() return turret.attack_parameters end)
+                            if success and attack_params then
+                                -- Get current research level
+                                local turret_family, turret_config = get_turret_family(turret)
                             if turret_family and turret_config then
                                 -- Get the BASE turret's prototype range (not variant's range)
                                 -- Base ranges: gun=18, laser=24, flamethrower=30
@@ -243,7 +255,7 @@ local function on_configuration_changed(data)
                                     elseif family_name == "flamethrower-turret" then
                                         base_range = 30
                                     else
-                                        base_range = turret.attack_parameters.range
+                                        base_range = attack_params.range
                                     end
                                 end
 
@@ -256,7 +268,8 @@ local function on_configuration_changed(data)
                                 end
 
                                 -- Apply correct range
-                                turret.attack_parameters.range = base_range + expected_bonus
+                                attack_params.range = base_range + expected_bonus
+                            end
                             end
                         end
                     end
