@@ -17,6 +17,16 @@ local TURRET_CONFIG = {
         type = "fluid-turret",
         tech_prefix = "flamethrower-turret-range",
         max_level = 3
+    },
+    ["rocket-turret"] = {
+        type = "ammo-turret",
+        tech_prefix = "rocket-turret-range",
+        max_level = 5
+    },
+    ["tesla-turret"] = {
+        type = "electric-turret",
+        tech_prefix = "tesla-turret-range",
+        max_level = 5
     }
 }
 
@@ -332,7 +342,7 @@ script.on_event(defines.events.on_entity_cloned, on_turret_built, turret_filters
 remote.add_interface("turret-range-research", {
     -- Get the current range bonus for a turret type
     -- force_name: string - name of the force
-    -- base_turret_name: string - "gun-turret", "laser-turret", or "flamethrower-turret"
+    -- base_turret_name: string - "gun-turret", "laser-turret", "flamethrower-turret", "rocket-turret", or "tesla-turret"
     -- Returns: number - tiles of range bonus (0 if no research)
     get_range_bonus = function(force_name, base_turret_name)
         local force = game.forces[force_name]
@@ -365,7 +375,7 @@ remote.add_interface("turret-range-research", {
     end,
 
     -- Get the appropriate variant name for a base turret and force
-    -- base_turret_name: string - "gun-turret", "laser-turret", or "flamethrower-turret"
+    -- base_turret_name: string - "gun-turret", "laser-turret", "flamethrower-turret", "rocket-turret", or "tesla-turret"
     -- force_name: string - name of the force
     -- Returns: string - the variant name that should be used
     get_variant_for_force = function(base_turret_name, force_name)

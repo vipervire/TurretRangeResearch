@@ -33,6 +33,29 @@ local TURRET_CONFIG = {
     }
 }
 
+-- Add Space Age turrets if the DLC is installed
+if data.raw["ammo-turret"]["rocket-turret"] then
+    table.insert(TURRET_CONFIG, {
+        base_name = "rocket-turret",
+        turret_type = "ammo-turret",
+        max_level = 5,
+        damage_techs = {
+            "stronger-explosives",         -- Affects rocket turrets
+        }
+    })
+end
+
+if data.raw["electric-turret"]["tesla-turret"] then
+    table.insert(TURRET_CONFIG, {
+        base_name = "tesla-turret",
+        turret_type = "electric-turret",
+        max_level = 5,
+        damage_techs = {
+            "energy-weapons-damage",       -- Affects tesla turrets
+        }
+    })
+end
+
 -- Function to add turret-attack effects for our variants to a technology
 local function add_variant_effects(tech, variant_names, base_modifier)
     if not tech or not tech.effects then return end

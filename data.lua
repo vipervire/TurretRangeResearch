@@ -26,6 +26,25 @@ local TURRET_CONFIG = {
     }
 }
 
+-- Add Space Age turrets if the DLC is installed
+if data.raw["ammo-turret"]["rocket-turret"] then
+    table.insert(TURRET_CONFIG, {
+        base_name = "rocket-turret",
+        turret_type = "ammo-turret",
+        max_level = 5,
+        tech_prefix = "rocket-turret-range"
+    })
+end
+
+if data.raw["electric-turret"]["tesla-turret"] then
+    table.insert(TURRET_CONFIG, {
+        base_name = "tesla-turret",
+        turret_type = "electric-turret",
+        max_level = 5,
+        tech_prefix = "tesla-turret-range"
+    })
+end
+
 -- ============================================================================
 -- CREATE HIDDEN TURRET VARIANTS
 -- These are identical to base turrets but with increased range
@@ -187,7 +206,7 @@ for level = 1, 3 do
     else
         prerequisites = {"flamethrower-turret-range-" .. (level - 1)}
     end
-    
+
     local ingredients = {
         {"automation-science-pack", 1},
         {"logistic-science-pack", 1},
@@ -195,7 +214,7 @@ for level = 1, 3 do
         {"chemical-science-pack", 1}
     }
     if level >= 3 then table.insert(ingredients, {"utility-science-pack", 1}) end
-    
+
     data:extend({{
         type = "technology",
         name = "flamethrower-turret-range-" .. level,
@@ -215,4 +234,102 @@ for level = 1, 3 do
         },
         upgrade = true
     }})
+end
+
+-- Rocket Turret Range Research (Space Age only)
+if data.raw["ammo-turret"]["rocket-turret"] then
+    for level = 1, 5 do
+        local prerequisites = {}
+        if level == 1 then
+            prerequisites = {"rocket-turret", "military-science-pack", "utility-science-pack"}
+        elseif level == 3 then
+            -- First level requiring space science
+            prerequisites = {"rocket-turret-range-" .. (level - 1)}
+            if data.raw.tool["space-science-pack"] then
+                table.insert(prerequisites, "space-science-pack")
+            end
+        else
+            prerequisites = {"rocket-turret-range-" .. (level - 1)}
+        end
+
+        local ingredients = {
+            {"automation-science-pack", 1},
+            {"logistic-science-pack", 1},
+            {"military-science-pack", 1},
+            {"chemical-science-pack", 1},
+            {"utility-science-pack", 1}
+        }
+        if level >= 3 and data.raw.tool["space-science-pack"] then
+            table.insert(ingredients, {"space-science-pack", 1})
+        end
+
+        data:extend({{
+            type = "technology",
+            name = "rocket-turret-range-" .. level,
+            icon = "__space-age__/graphics/technology/rocket-turret.png",
+            icon_size = 256,
+            effects = {
+                {
+                    type = "nothing",
+                    effect_description = {"technology-effect.turret-range-bonus", "+" .. (level * RANGE_BONUS_PER_LEVEL)}
+                }
+            },
+            prerequisites = prerequisites,
+            unit = {
+                count = 200 * level,
+                ingredients = ingredients,
+                time = 60
+            },
+            upgrade = true
+        }})
+    end
+end
+
+-- Tesla Turret Range Research (Space Age only)
+if data.raw["electric-turret"]["tesla-turret"] then
+    for level = 1, 5 do
+        local prerequisites = {}
+        if level == 1 then
+            prerequisites = {"tesla-turret", "military-science-pack", "utility-science-pack"}
+        elseif level == 3 then
+            -- First level requiring space science
+            prerequisites = {"tesla-turret-range-" .. (level - 1)}
+            if data.raw.tool["space-science-pack"] then
+                table.insert(prerequisites, "space-science-pack")
+            end
+        else
+            prerequisites = {"tesla-turret-range-" .. (level - 1)}
+        end
+
+        local ingredients = {
+            {"automation-science-pack", 1},
+            {"logistic-science-pack", 1},
+            {"military-science-pack", 1},
+            {"chemical-science-pack", 1},
+            {"utility-science-pack", 1}
+        }
+        if level >= 3 and data.raw.tool["space-science-pack"] then
+            table.insert(ingredients, {"space-science-pack", 1})
+        end
+
+        data:extend({{
+            type = "technology",
+            name = "tesla-turret-range-" .. level,
+            icon = "__space-age__/graphics/technology/tesla-turret.png",
+            icon_size = 256,
+            effects = {
+                {
+                    type = "nothing",
+                    effect_description = {"technology-effect.turret-range-bonus", "+" .. (level * RANGE_BONUS_PER_LEVEL)}
+                }
+            },
+            prerequisites = prerequisites,
+            unit = {
+                count = 200 * level,
+                ingredients = ingredients,
+                time = 60
+            },
+            upgrade = true
+        }})
+    end
 end
