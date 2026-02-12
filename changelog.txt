@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.9
-Date: 07. 02. 2026
+Date: 11. 02. 2026
   Features:
     - Added Space Age support for rocket turrets and tesla turrets
     - Rocket turrets now have 5 levels of range research
@@ -9,6 +9,7 @@ Date: 07. 02. 2026
     - Tesla turret variants receive bonuses from energy-weapons-damage research
   Bugfixes:
     - Fixed unknown entity names appearing in damage research technology tooltips for all turret variants
+    - Fixed turrets losing damage_dealt statistics when upgraded by research
   Changes:
     - Added entity-name localization entries for all turret variants to ensure proper display in technology tooltips
     - Rocket and tesla turret range research automatically loads when Space Age DLC is installed

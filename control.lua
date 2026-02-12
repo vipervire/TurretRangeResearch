@@ -77,6 +77,7 @@ local function swap_turret(old_turret, new_name)
     local state = {
         direction = old_turret.direction,
         kills = old_turret.kills,  -- Kills counter needs manual restoration
+        damage_dealt = old_turret.damage_dealt,  -- Damage dealt needs manual restoration
     }
 
     -- Capture optional properties for creation or manual restoration
@@ -172,9 +173,10 @@ local function swap_turret(old_turret, new_name)
         -- - Force
         -- - Active state (controlled by circuit conditions)
 
-        -- Restore kills counter (not transferred by fast_replace)
+        -- Restore kills counter and damage dealt (not transferred by fast_replace)
         pcall(function()
             new_turret.kills = state.kills
+            new_turret.damage_dealt = state.damage_dealt
         end)
 
         -- Restore optional properties that may not transfer automatically
