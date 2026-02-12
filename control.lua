@@ -120,7 +120,7 @@ local function swap_turret(old_turret, new_name)
     if not prototype_exists then
         -- Log warning if prototype is missing (shouldn't happen in normal gameplay)
         if old_turret and old_turret.valid and old_turret.force then
-            old_turret.force.print({"", "[color=yellow][Turret Range Warning][/color] Could not upgrade turret: prototype '", new_name, "' not found. Please report this issue."})
+            old_turret.force.print({"", "[color=yellow][Turret Range Warning][/color] ", {"mod-message.turret-range-research-prototype-missing", new_name}})
         end
         return nil
     end
@@ -158,7 +158,7 @@ local function swap_turret(old_turret, new_name)
     if not new_turret then
         -- Log warning if creation failed (turret is safe, just not upgraded)
         if force then
-            force.print({"", "[color=yellow][Turret Range Warning][/color] Could not upgrade turret at (", position.x, ", ", position.y, ") to '", new_name, "'. Turret remains unchanged."})
+            force.print({"", "[color=yellow][Turret Range Warning][/color] ", {"mod-message.turret-range-research-upgrade-failed", position.x, position.y, new_name}})
         end
         return nil
     end
@@ -216,33 +216,38 @@ end
 local function upgrade_turrets_for_force(force, base_name)
     local config = TURRET_CONFIG[base_name]
     if not config then return end
-    
+
     local target_name = get_turret_variant(base_name, force)
     local upgraded_count = 0
-    
-    -- Build list of all variant names to search for
-    local search_names = {base_name}
-    for level = 1, config.max_level do
-        table.insert(search_names, base_name .. "-ranged-" .. level)
+
+    -- Build list of all variant names to search for (excluding the target)
+    local search_names = {}
+    if base_name ~= target_name then
+        table.insert(search_names, base_name)
     end
-    
-    -- Find and upgrade all turrets on all surfaces
-    for _, surface in pairs(game.surfaces) do
-        for _, name in pairs(search_names) do
-            if name ~= target_name then
-                local turrets = surface.find_entities_filtered{
-                    name = name,
-                    force = force
-                }
-                for _, turret in pairs(turrets) do
-                    if swap_turret(turret, target_name) then
-                        upgraded_count = upgraded_count + 1
-                    end
+    for level = 1, config.max_level do
+        local variant_name = base_name .. "-ranged-" .. level
+        if variant_name ~= target_name then
+            table.insert(search_names, variant_name)
+        end
+    end
+
+    -- Performance optimization: single find_entities_filtered call per surface
+    -- This is much faster than multiple calls, especially on large maps
+    if #search_names > 0 then
+        for _, surface in pairs(game.surfaces) do
+            local turrets = surface.find_entities_filtered{
+                name = search_names,  -- Can pass array of names
+                force = force
+            }
+            for _, turret in pairs(turrets) do
+                if swap_turret(turret, target_name) then
+                    upgraded_count = upgraded_count + 1
                 end
             end
         end
     end
-    
+
     return upgraded_count
 end
 
@@ -254,16 +259,18 @@ end
 local function on_research_finished(event)
     local tech = event.research
     local force = tech.force
-    
+
     -- Check if this is one of our range technologies
     for base_name, config in pairs(TURRET_CONFIG) do
         if string.find(tech.name, config.tech_prefix, 1, true) then
             local count = upgrade_turrets_for_force(force, base_name)
             local level = get_research_level(force, config.tech_prefix, config.max_level)
-            
-            -- Notify the force
-            local turret_display = base_name:gsub("-", " ")
-            force.print({"", "[color=green][Turret Range][/color] All ", turret_display, "s upgraded! Range bonus: +", level * 3, " tiles (", count, " turrets upgraded)"})
+
+            -- Only notify if turrets were actually upgraded
+            if count > 0 then
+                local turret_display = base_name:gsub("-", " ")
+                force.print({"", "[color=green][Turret Range][/color] ", {"mod-message.turret-range-research-upgrade-complete", turret_display, level * 3, count}})
+            end
             return
         end
     end
@@ -321,6 +328,7 @@ local turret_filters = {
 script.on_event(defines.events.on_built_entity, on_turret_built, turret_filters)
 script.on_event(defines.events.on_robot_built_entity, on_turret_built, turret_filters)
 script.on_event(defines.events.script_raised_built, on_turret_built, turret_filters)
+script.on_event(defines.events.script_raised_revive, on_turret_built, turret_filters)
 script.on_event(defines.events.on_entity_cloned, on_turret_built, turret_filters)
 
 -- ============================================================================
