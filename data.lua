@@ -4,6 +4,27 @@
 
 local RANGE_BONUS_PER_LEVEL = 3  -- Tiles of range per research level
 
+-- ============================================================================
+-- MODDED TURRET REGISTRATION (DATA STAGE)
+-- ============================================================================
+-- Other mods can register their turrets by adding to this global table
+-- in their data.lua or data-updates.lua (before our data-final-fixes):
+--
+-- if not turret_range_research_registrations then
+--     turret_range_research_registrations = {}
+-- end
+-- table.insert(turret_range_research_registrations, {
+--     base_name = "plasma-turret",
+--     turret_type = "electric-turret",
+--     max_level = 5,
+--     tech_prefix = "plasma-turret-range"
+-- })
+-- ============================================================================
+
+if not turret_range_research_registrations then
+    turret_range_research_registrations = {}
+end
+
 -- Configuration table (shared with control.lua via settings)
 local TURRET_CONFIG = {
     {
@@ -51,44 +72,62 @@ end
 -- They use the same localised name so players see them as the same turret
 -- ============================================================================
 
-for _, config in pairs(TURRET_CONFIG) do
+-- Function to create variants for a turret config
+local function create_turret_variants(config)
     local base = data.raw[config.turret_type] and data.raw[config.turret_type][config.base_name]
-    if base then
-        -- Get the base turret's fast_replaceable_group (use existing or default to base_name)
-        -- This ensures compatibility with mods that modify turret upgrade chains (like Bob's Warfare)
-        local replaceable_group = base.fast_replaceable_group or config.base_name
+    if not base then
+        log("Turret Range Research: Warning - turret '" .. config.base_name .. "' not found")
+        return
+    end
 
-        for level = 1, config.max_level do
-            local variant = table.deepcopy(base)
-            variant.name = config.base_name .. "-ranged-" .. level
+    -- Get the base turret's fast_replaceable_group (use existing or default to base_name)
+    -- This ensures compatibility with mods that modify turret upgrade chains (like Bob's Warfare)
+    local replaceable_group = base.fast_replaceable_group or config.base_name
 
-            -- Keep the same localised name as the base turret (invisible to player)
-            variant.localised_name = {"entity-name." .. config.base_name}
-            variant.localised_description = {"entity-description." .. config.base_name}
+    for level = 1, config.max_level do
+        local variant = table.deepcopy(base)
+        variant.name = config.base_name .. "-ranged-" .. level
 
-            -- Mining returns the base item
-            if variant.minable then
-                variant.minable.result = config.base_name
-            end
+        -- Keep the same localised name as the base turret (invisible to player)
+        variant.localised_name = {"entity-name." .. config.base_name}
+        variant.localised_description = {"entity-description." .. config.base_name}
 
-            -- Modify the attack range directly in the deep-copied attack_parameters
-            if variant.attack_parameters then
-                variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
-            end
-
-            -- Hide from player (not in crafting menu, not selectable separately)
-            variant.hidden = true
-            variant.hidden_in_factoriopedia = true
-
-            -- Use same fast_replaceable_group as base turret for seamless swapping
-            -- This MUST match the base turret's group for fast_replace to work
-            variant.fast_replaceable_group = replaceable_group
-
-            -- Copy the placeable_by so robots can work with them
-            variant.placeable_by = {item = config.base_name, count = 1}
-
-            data:extend({variant})
+        -- Mining returns the base item
+        if variant.minable then
+            variant.minable.result = config.base_name
         end
+
+        -- Modify the attack range directly in the deep-copied attack_parameters
+        if variant.attack_parameters then
+            variant.attack_parameters.range = (base.attack_parameters.range or 20) + (level * RANGE_BONUS_PER_LEVEL)
+        end
+
+        -- Hide from player (not in crafting menu, not selectable separately)
+        variant.hidden = true
+        variant.hidden_in_factoriopedia = true
+
+        -- Use same fast_replaceable_group as base turret for seamless swapping
+        -- This MUST match the base turret's group for fast_replace to work
+        variant.fast_replaceable_group = replaceable_group
+
+        -- Copy the placeable_by so robots can work with them
+        variant.placeable_by = {item = config.base_name, count = 1}
+
+        data:extend({variant})
+    end
+end
+
+-- Create variants for vanilla turrets
+for _, config in pairs(TURRET_CONFIG) do
+    create_turret_variants(config)
+end
+
+-- Create variants for registered modded turrets (if enabled)
+local enable_modded = settings.startup["turret-range-research-enable-modded-turrets"]
+if enable_modded and enable_modded.value then
+    for _, config in pairs(turret_range_research_registrations) do
+        log("Turret Range Research: Creating variants for registered modded turret '" .. config.base_name .. "'")
+        create_turret_variants(config)
     end
 end
 

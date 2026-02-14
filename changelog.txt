@@ -1,5 +1,30 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.9
+Version: 1.2.0
+Date: 13. 02. 2026
+  Features:
+    - Added comprehensive modded turret support with auto-discovery and manual registration
+    - Auto-discovery respects existing range research (e.g., plasma-turret-range-1) to avoid conflicts
+    - Auto-discovered turrets are intelligently mapped to vanilla research based on ammunition type
+    - Bullet/shotgun turrets automatically use gun-turret-range research
+    - Rocket/cannon turrets automatically use rocket-turret-range research (explosive weapons)
+    - Electric turrets automatically use laser-turret-range or tesla-turret-range research
+    - Tesla-type turrets detected by name (tesla, lightning, arc keywords)
+    - Fluid turrets automatically use flamethrower-turret-range research
+    - Added remote interface for mod authors to register custom turrets at runtime
+    - Added data-stage registration table for mod authors to register turrets early
+    - Auto-discovered turrets receive appropriate damage bonuses from vanilla research
+  Settings:
+    - Added "Enable modded turret support" setting (default: enabled)
+    - Added "Auto-discover modded turrets" setting (default: enabled)
+    - Added "Map modded turrets to vanilla research by ammo type" setting (default: enabled)
+    - Added "Default max research level for modded turrets" setting (default: 5, range 1-10)
+  Changes:
+    - Modded turrets now seamlessly integrate with vanilla turret range research
+    - Hidden range variants are automatically created for all discovered turrets
+    - Turret swapping mechanism extended to support any compatible modded turret
+    - Remote interface expanded with get_all_turrets() and get_discovered_turrets() functions
+---------------------------------------------------------------------------------------------------
+Version: 1.1.0
 Date: 11. 02. 2026
   Features:
     - Added Space Age support for rocket turrets and tesla turrets

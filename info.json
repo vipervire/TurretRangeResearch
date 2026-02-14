@@ -1,9 +1,9 @@
 {
   "name": "turret-range-research",
-  "version": "1.0.9",
+  "version": "1.2.0",
   "title": "Turret Range Research",
   "author": "Vipervire",
-  "description": "Adds research technologies to increase the range of gun turrets, laser turrets, flamethrower turrets, and Space Age turrets (rocket and tesla).",
+  "description": "Adds research technologies to increase the range of gun turrets, laser turrets, flamethrower turrets, and Space Age turrets (rocket and tesla). Automatically supports modded turrets with intelligent ammo-based research mapping.",
   "factorio_version": "2.0",
   "dependencies": [
     "base >= 2.0",

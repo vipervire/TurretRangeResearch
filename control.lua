@@ -2,7 +2,10 @@
 -- Automatically upgrades turrets when research completes
 -- Swaps turrets to ranged variants, preserving state (ammo, health, etc.)
 
-local TURRET_CONFIG = {
+-- ============================================================================
+-- HARDCODED VANILLA TURRET CONFIGURATION
+-- ============================================================================
+local VANILLA_TURRET_CONFIG = {
     ["gun-turret"] = {
         type = "ammo-turret",
         tech_prefix = "gun-turret-range",
@@ -30,12 +33,198 @@ local TURRET_CONFIG = {
     }
 }
 
+-- Active configuration (merged from vanilla + custom + discovered)
+local TURRET_CONFIG = {}
+
+-- Custom turrets registered via remote interface
+local CUSTOM_REGISTERED_TURRETS = {}
+
+-- Auto-discovered modded turrets
+local AUTO_DISCOVERED_TURRETS = {}
+
 -- Build reverse lookup: variant name -> base name
 local VARIANT_TO_BASE = {}
-for base_name, config in pairs(TURRET_CONFIG) do
-    VARIANT_TO_BASE[base_name] = base_name
-    for level = 1, config.max_level do
-        VARIANT_TO_BASE[base_name .. "-ranged-" .. level] = base_name
+
+-- ============================================================================
+-- AUTO-DISCOVERY AND CONFIGURATION MERGING
+-- ============================================================================
+
+-- Supported turret types for auto-discovery
+local SUPPORTED_TURRET_TYPES = {
+    ["ammo-turret"] = true,
+    ["electric-turret"] = true,
+    ["fluid-turret"] = true
+}
+
+-- Ammunition category to vanilla tech prefix mapping
+-- Rocket turret range represents explosive/area-damage weapons
+local AMMO_CATEGORY_TO_TECH = {
+    ["bullet"] = "gun-turret-range",
+    ["shotgun-shell"] = "gun-turret-range",
+    ["rocket"] = "rocket-turret-range",           -- Explosive weapons
+    ["explosive-rocket"] = "rocket-turret-range", -- Explosive weapons
+    ["cannon-shell"] = "rocket-turret-range",     -- Explosive weapons (cannons are area damage)
+}
+
+-- Detect appropriate tech prefix based on turret's ammunition or attack type
+local function detect_tech_prefix(turret_name, prototype, default_max_level)
+    local turret_type = prototype.type
+
+    -- For ammo turrets, check ammunition categories
+    if turret_type == "ammo-turret" then
+        if prototype.attack_parameters and prototype.attack_parameters.ammo_categories then
+            -- Check each ammo category the turret accepts
+            for _, ammo_category in pairs(prototype.attack_parameters.ammo_categories) do
+                -- If we have a mapping for this ammo type, use vanilla research
+                if AMMO_CATEGORY_TO_TECH[ammo_category.name] then
+                    local vanilla_tech = AMMO_CATEGORY_TO_TECH[ammo_category.name]
+                    -- Get max_level from the vanilla turret that uses this tech
+                    for vanilla_name, vanilla_config in pairs(VANILLA_TURRET_CONFIG) do
+                        if vanilla_config.tech_prefix == vanilla_tech then
+                            return vanilla_tech, vanilla_config.max_level
+                        end
+                    end
+                    return vanilla_tech, 5
+                end
+            end
+        end
+        -- Default ammo turrets to gun-turret-range if no specific mapping
+        return "gun-turret-range", 5
+
+    -- For electric turrets, distinguish between laser and tesla types
+    elseif turret_type == "electric-turret" then
+        -- Check if it's a tesla-type turret based on name
+        local name_lower = turret_name:lower()
+
+        -- Name-based detection for tesla turrets
+        if name_lower:find("tesla") or name_lower:find("lightning") or name_lower:find("arc") then
+            return "tesla-turret-range", 5
+        end
+
+        -- Default electric turrets to laser-turret-range
+        return "laser-turret-range", 5
+
+    -- For fluid turrets, default to flamethrower-turret-range
+    elseif turret_type == "fluid-turret" then
+        return "flamethrower-turret-range", 3
+    end
+
+    -- Fallback: use turret's own unique tech prefix
+    return turret_name .. "-range", default_max_level
+end
+
+-- Check if a turret already has its own range research technologies
+local function has_own_range_research(turret_name, max_levels_to_check)
+    max_levels_to_check = max_levels_to_check or 10
+    local tech_prefix = turret_name .. "-range"
+
+    -- Check if at least level 1 exists
+    for level = 1, max_levels_to_check do
+        local tech = prototypes.technology[tech_prefix .. "-" .. level]
+        if tech then
+            -- Found at least one level, count how many levels exist
+            local found_max_level = level
+            for check_level = level + 1, max_levels_to_check do
+                if prototypes.technology[tech_prefix .. "-" .. check_level] then
+                    found_max_level = check_level
+                else
+                    break
+                end
+            end
+            return true, tech_prefix, found_max_level
+        end
+    end
+
+    return false, nil, nil
+end
+
+-- Auto-discover modded turrets of supported types
+local function auto_discover_turrets()
+    local discovered = {}
+
+    -- Get settings
+    local enable_modded = settings.startup["turret-range-research-enable-modded-turrets"].value
+    local enable_auto_discover = settings.startup["turret-range-research-auto-discover"].value
+    local use_ammo_mapping = settings.startup["turret-range-research-use-ammo-mapping"].value
+    local default_max_level = settings.startup["turret-range-research-default-max-level"].value
+
+    if not enable_modded or not enable_auto_discover then
+        return discovered
+    end
+
+    -- Scan all entity prototypes
+    for name, prototype in pairs(prototypes.entity) do
+        -- Skip if it's a vanilla turret (already hardcoded)
+        if not VANILLA_TURRET_CONFIG[name] then
+            -- Check if it's a supported turret type
+            if SUPPORTED_TURRET_TYPES[prototype.type] then
+                -- Skip our own ranged variants
+                if not string.find(name, "-ranged%-") then
+                    local tech_prefix, max_level
+
+                    -- First, check if this turret already has its own range research
+                    local has_own_tech, own_tech_prefix, own_max_level = has_own_range_research(name)
+
+                    if has_own_tech then
+                        -- Respect the existing range research
+                        tech_prefix = own_tech_prefix
+                        max_level = own_max_level
+                    elseif use_ammo_mapping then
+                        -- Detect appropriate tech prefix based on ammo type
+                        tech_prefix, max_level = detect_tech_prefix(name, prototype, default_max_level)
+                    else
+                        -- Each turret gets its own unique research tree
+                        tech_prefix = name .. "-range"
+                        max_level = default_max_level
+                    end
+
+                    discovered[name] = {
+                        type = prototype.type,
+                        tech_prefix = tech_prefix,
+                        max_level = max_level,
+                        auto_discovered = true,
+                        has_own_research = has_own_tech
+                    }
+                end
+            end
+        end
+    end
+
+    return discovered
+end
+
+-- Rebuild TURRET_CONFIG by merging all sources
+local function rebuild_turret_config()
+    TURRET_CONFIG = {}
+
+    -- Start with vanilla turrets (always included)
+    for name, config in pairs(VANILLA_TURRET_CONFIG) do
+        TURRET_CONFIG[name] = config
+    end
+
+    -- Add custom registered turrets if modded turrets are enabled
+    local enable_modded = settings.startup["turret-range-research-enable-modded-turrets"].value
+    if enable_modded then
+        for name, config in pairs(CUSTOM_REGISTERED_TURRETS) do
+            TURRET_CONFIG[name] = config
+        end
+
+        -- Add auto-discovered turrets
+        for name, config in pairs(AUTO_DISCOVERED_TURRETS) do
+            -- Don't override custom registered or vanilla turrets
+            if not TURRET_CONFIG[name] then
+                TURRET_CONFIG[name] = config
+            end
+        end
+    end
+
+    -- Rebuild VARIANT_TO_BASE lookup
+    VARIANT_TO_BASE = {}
+    for base_name, config in pairs(TURRET_CONFIG) do
+        VARIANT_TO_BASE[base_name] = base_name
+        for level = 1, config.max_level do
+            VARIANT_TO_BASE[base_name .. "-ranged-" .. level] = base_name
+        end
     end
 end
 
@@ -292,6 +481,12 @@ end
 
 -- Initialize storage and upgrade existing turrets
 local function on_init()
+    -- Auto-discover modded turrets
+    AUTO_DISCOVERED_TURRETS = auto_discover_turrets()
+
+    -- Rebuild configuration from all sources
+    rebuild_turret_config()
+
     -- Upgrade existing turrets for all forces
     for _, force in pairs(game.forces) do
         for base_name, _ in pairs(TURRET_CONFIG) do
@@ -302,6 +497,12 @@ end
 
 -- Handle configuration changes (mod updates)
 local function on_configuration_changed(data)
+    -- Re-discover turrets (mod list may have changed)
+    AUTO_DISCOVERED_TURRETS = auto_discover_turrets()
+
+    -- Rebuild configuration from all sources
+    rebuild_turret_config()
+
     -- Re-check all turrets when mod configuration changes
     for _, force in pairs(game.forces) do
         for base_name, _ in pairs(TURRET_CONFIG) do
@@ -392,5 +593,59 @@ remote.add_interface("turret-range-research", {
         local force = game.forces[force_name]
         if not force then return base_turret_name end
         return get_turret_variant(base_turret_name, force)
+    end,
+
+    -- ========================================================================
+    -- MODDED TURRET REGISTRATION
+    -- ========================================================================
+    -- Register a modded turret to be supported by this mod
+    -- config: table with the following fields:
+    --   - base_name: string (required) - The base entity name (e.g., "plasma-turret")
+    --   - type: string (required) - Turret type: "ammo-turret", "electric-turret", or "fluid-turret"
+    --   - tech_prefix: string (required) - Technology name prefix (e.g., "plasma-turret-range")
+    --   - max_level: number (optional) - Maximum research level (default: 5)
+    -- Example:
+    --   remote.call("turret-range-research", "register_modded_turret", {
+    --       base_name = "plasma-turret",
+    --       type = "electric-turret",
+    --       tech_prefix = "plasma-turret-range",
+    --       max_level = 5
+    --   })
+    register_modded_turret = function(config)
+        if not config or not config.base_name or not config.type or not config.tech_prefix then
+            error("register_modded_turret requires base_name, type, and tech_prefix")
+        end
+
+        -- Validate turret type
+        if not SUPPORTED_TURRET_TYPES[config.type] then
+            error("Invalid turret type: " .. config.type .. ". Must be ammo-turret, electric-turret, or fluid-turret")
+        end
+
+        -- Set defaults
+        config.max_level = config.max_level or 5
+
+        -- Store the registration
+        CUSTOM_REGISTERED_TURRETS[config.base_name] = {
+            type = config.type,
+            tech_prefix = config.tech_prefix,
+            max_level = config.max_level
+        }
+
+        -- Rebuild configuration
+        rebuild_turret_config()
+
+        return true
+    end,
+
+    -- Get list of all supported turrets (vanilla + custom + discovered)
+    -- Returns: table - map of base_name -> config
+    get_all_turrets = function()
+        return TURRET_CONFIG
+    end,
+
+    -- Get list of auto-discovered turrets
+    -- Returns: table - map of base_name -> config
+    get_discovered_turrets = function()
+        return AUTO_DISCOVERED_TURRETS
     end
 })
