@@ -221,13 +221,14 @@ local function upgrade_turrets_for_force(force, base_name)
     local upgraded_count = 0
 
     -- Build list of all variant names to search for (excluding the target)
+    -- Only include names that exist as prototypes (some turrets require DLC)
     local search_names = {}
-    if base_name ~= target_name then
+    if base_name ~= target_name and prototypes.entity[base_name] then
         table.insert(search_names, base_name)
     end
     for level = 1, config.max_level do
         local variant_name = base_name .. "-ranged-" .. level
-        if variant_name ~= target_name then
+        if variant_name ~= target_name and prototypes.entity[variant_name] then
             table.insert(search_names, variant_name)
         end
     end
