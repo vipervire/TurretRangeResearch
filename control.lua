@@ -280,10 +280,10 @@ end
 local function on_turret_built(event)
     local entity = event.entity or event.destination
     if not entity or not entity.valid then return end
-    
+
     local base_name = VARIANT_TO_BASE[entity.name]
     if not base_name then return end
-    
+
     local target = get_turret_variant(base_name, entity.force)
     if entity.name ~= target then
         swap_turret(entity, target)
@@ -330,6 +330,11 @@ script.on_event(defines.events.on_robot_built_entity, on_turret_built, turret_fi
 script.on_event(defines.events.script_raised_built, on_turret_built, turret_filters)
 script.on_event(defines.events.script_raised_revive, on_turret_built, turret_filters)
 script.on_event(defines.events.on_entity_cloned, on_turret_built, turret_filters)
+
+-- Space platform specific event (when space platform hub builds from ghosts)
+if defines.events.on_space_platform_built_entity then
+    script.on_event(defines.events.on_space_platform_built_entity, on_turret_built, turret_filters)
+end
 
 -- ============================================================================
 -- REMOTE INTERFACE (for other mods)
