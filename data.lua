@@ -241,7 +241,13 @@ if data.raw["ammo-turret"]["rocket-turret"] then
     for level = 1, 5 do
         local prerequisites = {}
         if level == 1 then
-            prerequisites = {"rocket-turret", "military-science-pack", "utility-science-pack"}
+            -- Check if rocket-turret technology exists, otherwise use a fallback
+            if data.raw.technology["rocket-turret"] then
+                prerequisites = {"rocket-turret", "military-science-pack", "utility-science-pack"}
+            else
+                -- Fallback: use just utility science if the tech doesn't exist
+                prerequisites = {"military-science-pack", "utility-science-pack"}
+            end
         elseif level == 3 then
             -- First level requiring space science
             prerequisites = {"rocket-turret-range-" .. (level - 1)}
@@ -290,7 +296,13 @@ if data.raw["electric-turret"]["tesla-turret"] then
     for level = 1, 5 do
         local prerequisites = {}
         if level == 1 then
-            prerequisites = {"tesla-turret", "military-science-pack", "utility-science-pack"}
+            -- Tesla turret is unlocked by "tesla-weapons" technology
+            if data.raw.technology["tesla-weapons"] then
+                prerequisites = {"tesla-weapons", "military-science-pack", "utility-science-pack"}
+            else
+                -- Fallback if Space Age isn't installed
+                prerequisites = {"military-science-pack", "utility-science-pack"}
+            end
         elseif level == 3 then
             -- First level requiring space science
             prerequisites = {"tesla-turret-range-" .. (level - 1)}
