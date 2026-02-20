@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: 20. 02. 2026
+  Bugfixes:
+    - Fixed crash on init when Space Age is not installed (unknown entity name error in find_entities_filtered)
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 11. 02. 2026
   Features:
