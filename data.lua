@@ -265,8 +265,12 @@ if data.raw["ammo-turret"]["rocket-turret"] then
             {"chemical-science-pack", 1},
             {"utility-science-pack", 1}
         }
-        if level >= 3 and data.raw.tool["space-science-pack"] then
+        -- Add space science and agriculture science to all levels
+        if data.raw.tool["space-science-pack"] then
             table.insert(ingredients, {"space-science-pack", 1})
+        end
+        if data.raw.tool["agricultural-science-pack"] then
+            table.insert(ingredients, {"agricultural-science-pack", 1})
         end
 
         data:extend({{
@@ -320,8 +324,12 @@ if data.raw["electric-turret"]["tesla-turret"] then
             {"chemical-science-pack", 1},
             {"utility-science-pack", 1}
         }
-        if level >= 3 and data.raw.tool["space-science-pack"] then
+        -- Add space science and electromagnetic science to all levels
+        if data.raw.tool["space-science-pack"] then
             table.insert(ingredients, {"space-science-pack", 1})
+        end
+        if data.raw.tool["electromagnetic-science-pack"] then
+            table.insert(ingredients, {"electromagnetic-science-pack", 1})
         end
 
         data:extend({{
