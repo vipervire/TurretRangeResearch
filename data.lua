@@ -327,7 +327,7 @@ if data.raw["electric-turret"]["tesla-turret"] then
         data:extend({{
             type = "technology",
             name = "tesla-turret-range-" .. level,
-            icon = "__space-age__/graphics/technology/tesla-turret.png",
+            icon = "__space-age__/graphics/technology/tesla-weapons.png",
             icon_size = 256,
             effects = {
                 {
