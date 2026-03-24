@@ -152,6 +152,15 @@ local function swap_turret(old_turret, new_name)
         end
     end
 
+    -- Raise destroy event for old turret before fast_replace consumes it
+    -- Other mods listening for this can clean up / redirect their entity references
+    pcall(function()
+        script.raise_event(defines.events.script_raised_destroy, {
+            entity = old_turret,
+            mod_name = script.mod_name
+        })
+    end)
+
     -- Create the new turret using fast_replace (like upgrading AM2 to AM3)
     local new_turret = surface.create_entity(create_params)
 
@@ -344,12 +353,14 @@ end
 -- MOD COMPATIBILITY NOTES:
 -- This mod uses fast_replace to swap turrets, which means:
 -- 1. Entity references become invalid when a turret is upgraded
--- 2. We raise script_raised_built after replacement (other mods can listen to this)
--- 3. Entity tags, labels, and most properties are preserved
--- 4. Circuit connections and control behavior are preserved
+-- 2. We raise script_raised_destroy BEFORE replacement (old entity still valid)
+-- 3. We raise script_raised_built AFTER replacement (new entity reference)
+-- 4. Entity tags, labels, and most properties are preserved
+-- 5. Circuit connections and control behavior are preserved
 --
 -- If your mod stores references to turret entities:
--- - Listen to script_raised_built events from "turret-range-research"
+-- - Listen to script_raised_destroy from "turret-range-research" to remove old refs
+-- - Listen to script_raised_built from "turret-range-research" to add new refs
 -- - Use the remote interface below to check if an entity is our variant
 -- - Re-query entities after research completes
 --
