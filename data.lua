@@ -152,7 +152,7 @@ for level = 1, 5 do
     elseif level == 5 then
         -- First level requiring space science (if Space Age DLC is installed)
         prerequisites = {"laser-turret-range-" .. (level - 1)}
-        if data.raw.tool["space-science-pack"] then
+        if data.raw.item["space-science-pack"] then
             table.insert(prerequisites, "space-science-pack")
         else
             table.insert(prerequisites, "utility-science-pack")
@@ -169,7 +169,7 @@ for level = 1, 5 do
     }
     if level >= 3 then table.insert(ingredients, {"utility-science-pack", 1}) end
     -- Only add space science if Space Age DLC is installed
-    if level >= 5 and data.raw.tool["space-science-pack"] then
+    if level >= 5 and data.raw.item["space-science-pack"] then
         table.insert(ingredients, {"space-science-pack", 1})
     end
     
@@ -251,7 +251,7 @@ if data.raw["ammo-turret"]["rocket-turret"] then
         elseif level == 3 then
             -- First level requiring space science
             prerequisites = {"rocket-turret-range-" .. (level - 1)}
-            if data.raw.tool["space-science-pack"] then
+            if data.raw.item["space-science-pack"] then
                 table.insert(prerequisites, "space-science-pack")
             end
         else
@@ -266,10 +266,10 @@ if data.raw["ammo-turret"]["rocket-turret"] then
             {"utility-science-pack", 1}
         }
         -- Add space science and agriculture science to all levels
-        if data.raw.tool["space-science-pack"] then
+        if data.raw.item["space-science-pack"] then
             table.insert(ingredients, {"space-science-pack", 1})
         end
-        if data.raw.tool["agricultural-science-pack"] then
+        if data.raw.item["agricultural-science-pack"] then
             table.insert(ingredients, {"agricultural-science-pack", 1})
         end
 
@@ -310,7 +310,7 @@ if data.raw["electric-turret"]["tesla-turret"] then
         elseif level == 3 then
             -- First level requiring space science
             prerequisites = {"tesla-turret-range-" .. (level - 1)}
-            if data.raw.tool["space-science-pack"] then
+            if data.raw.item["space-science-pack"] then
                 table.insert(prerequisites, "space-science-pack")
             end
         else
@@ -325,10 +325,10 @@ if data.raw["electric-turret"]["tesla-turret"] then
             {"utility-science-pack", 1}
         }
         -- Add space science and electromagnetic science to all levels
-        if data.raw.tool["space-science-pack"] then
+        if data.raw.item["space-science-pack"] then
             table.insert(ingredients, {"space-science-pack", 1})
         end
-        if data.raw.tool["electromagnetic-science-pack"] then
+        if data.raw.item["electromagnetic-science-pack"] then
             table.insert(ingredients, {"electromagnetic-science-pack", 1})
         end
 
